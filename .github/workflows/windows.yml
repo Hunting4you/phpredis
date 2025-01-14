@@ -265,64 +265,66 @@ jobs:
         php: ['8.3']
         ts: [ts]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-    - name: Install PHP ${{ matrix.php }}
-      uses: php/setup-php-sdk@v0.10
-      id: setup-php-sdk
-      with:
-        version: ${{ matrix.php }}
-        arch: x64
-        ts: ${{matrix.ts}}
-        cache: true
-    - name: Install dependencies
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
-        toolset: ${{steps.setup-php-sdk.outputs.toolset}}
-    - name: Download igbinary DLL
-      run: |
-        $phpVersion = "${{ matrix.php }}"
-        $ts = "${{ matrix.ts }}"
-        $igbinaryUrl = "https://downloads.php.net/~windows/pecl/releases/igbinary/3.2.16/php_igbinary-3.2.16-8.3-ts-vs16-x64.zip"
-        Invoke-WebRequest -Uri $igbinaryUrl -OutFile "igbinary.zip"
-        Expand-Archive -Path "igbinary.zip" -DestinationPath "igbinary"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
 
-    - name: Download zstd DLL
-      run: |
-        $phpVersion = "${{ matrix.php }}"
-        $ts = "${{ matrix.ts }}"
-        $zstdUrl = "https://downloads.php.net/~windows/pecl/releases/zstd/0.14.0/php_zstd-0.14.0-8.3-ts-vs16-x64.zip"
-        Invoke-WebRequest -Uri $zstdUrl -OutFile "zstd.zip"
-        Expand-Archive -Path "zstd.zip" -DestinationPath "zstd"
+      - name: Install PHP ${{ matrix.php }}
+        uses: php/setup-php-sdk@v0.10
+        id: setup-php-sdk
+        with:
+          version: ${{ matrix.php }}
+          arch: x64
+          ts: ${{matrix.ts}}
+          cache: true
 
-    - name: Copy DLLs to PHP extension directory
-      run: |
-        Copy-Item -Path "igbinary\php_igbinary.dll" -Destination "${{steps.setup-php-sdk.outputs.prefix}}\ext"
-        Copy-Item -Path "zstd\php_zstd.dll" -Destination "${{steps.setup-php-sdk.outputs.prefix}}\ext"
+      - name: Install dependencies
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: ${{steps.setup-php-sdk.outputs.toolset}}
 
-    - name: Enable extensions in php.ini
-      run: |
-        Add-Content -Path "${{steps.setup-php-sdk.outputs.prefix}}\php.ini" -Value "extension=php_igbinary.dll"
-        Add-Content -Path "${{steps.setup-php-sdk.outputs.prefix}}\php.ini" -Value "extension=php_zstd.dll"
+      - name: Download igbinary DLL
+        run: |
+          $phpVersion = "${{ matrix.php }}"
+          $ts = "${{ matrix.ts }}"
+          $igbinaryUrl = "https://downloads.php.net/~windows/pecl/releases/igbinary/3.2.16/php_igbinary-3.2.16-8.3-ts-vs16-x64.zip"
+          Invoke-WebRequest -Uri $igbinaryUrl -OutFile "igbinary.zip"
+          Expand-Archive -Path "igbinary.zip" -DestinationPath "igbinary"
 
-    - name: Build phpredis with igbinary and zstd support
-      run: |
-        phpize
-        # Use configure.js for Windows
-        cscript //Nologo configure.js --enable-redis --enable-redis-igbinary --enable-redis-zstd --with-prefix=${{steps.setup-php-sdk.outputs.prefix}}
-        nmake
+      - name: Download zstd DLL
+        run: |
+          $phpVersion = "${{ matrix.php }}"
+          $ts = "${{ matrix.ts }}"
+          $zstdUrl = "https://downloads.php.net/~windows/pecl/releases/zstd/0.14.0/php_zstd-0.14.0-8.3-ts-vs16-x64.zip"
+          Invoke-WebRequest -Uri $zstdUrl -OutFile "zstd.zip"
+          Expand-Archive -Path "zstd.zip" -DestinationPath "zstd"
 
-    - name: Package
-      run: |
-        md binaries
-        copy LICENSE binaries
-        Get-ChildItem -Recurse -Filter "php_redis.dll" | ForEach-Object {Copy-Item -Path $_.FullName -Destination "binaries"}
+      - name: Copy DLLs to PHP extension directory
+        run: |
+          Copy-Item -Path "igbinary\php_igbinary.dll" -Destination "${{steps.setup-php-sdk.outputs.prefix}}\ext"
+          Copy-Item -Path "zstd\php_zstd.dll" -Destination "${{steps.setup-php-sdk.outputs.prefix}}\ext"
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: redis-${{matrix.php}}-x64-${{matrix.ts}}
-        path: binaries
+      - name: Enable extensions in php.ini
+        run: |
+          Add-Content -Path "${{steps.setup-php-sdk.outputs.prefix}}\php.ini" -Value "extension=php_igbinary.dll"
+          Add-Content -Path "${{steps.setup-php-sdk.outputs.prefix}}\php.ini" -Value "extension=php_zstd.dll"
+
+      - name: Build phpredis with igbinary and zstd support
+        run: |
+          phpize
+          .\configure.js --enable-redis --enable-redis-igbinary --enable-redis-zstd --with-prefix=${{steps.setup-php-sdk.outputs.prefix}}
+          nmake
+
+      - name: Package
+        run: |
+          md binaries
+          copy LICENSE binaries
+          Get-ChildItem -Recurse -Filter "php_redis.dll" | ForEach-Object {Copy-Item -Path $_.FullName -Destination "binaries"}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: redis-${{matrix.php}}-x64-${{matrix.ts}}
+          path: binaries

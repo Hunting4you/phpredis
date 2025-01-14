@@ -296,7 +296,6 @@ jobs:
           $zstdUrl = "https://downloads.php.net/~windows/pecl/releases/zstd/0.14.0/php_zstd-0.14.0-8.3-ts-vs16-x64.zip"
           Invoke-WebRequest -Uri $zstdUrl -OutFile "zstd.zip"
           Expand-Archive -Path "zstd.zip" -DestinationPath "zstd"
-
       - name: Copy DLLs to PHP extension directory
         run: |
           Copy-Item -Path "igbinary\php_igbinary.dll" -Destination "${{steps.setup-php-sdk.outputs.prefix}}\ext\"

@@ -256,36 +256,33 @@ jobs:
           sudo make install
           echo 'extension = redis.so' | sudo tee -a "$(php --ini | grep 'Scan for additional .ini files' | awk '{print $7}')/90-redis.ini"
 
-windows:
-  runs-on: windows-latest
-  continue-on-error: false
-  strategy:
-    fail-fast: false
-    matrix:
-      php: ['8.3']
-      ts: [ts]
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Install PHP ${{ matrix.php }}
-      uses: php/setup-php-sdk@v0.10
-      id: setup-php-sdk
-      with:
-        version: ${{ matrix.php }}
-        arch: x64
-        ts: ${{matrix.ts}}
-        cache: true
-
-    - name: Install dependencies
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
-        toolset: ${{steps.setup-php-sdk.outputs.toolset}}
-
-    - name: Download igbinary DLL
+  windows:
+    runs-on: windows-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3']
+        ts: [ts]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install PHP ${{ matrix.php }}
+        uses: php/setup-php-sdk@v0.10
+        id: setup-php-sdk
+        with:
+          version: ${{ matrix.php }}
+          arch: x64
+          ts: ${{matrix.ts}}
+          cache: true
+      - name: Install dependencies
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: ${{steps.setup-php-sdk.outputs.toolset}}
+      - name: Download igbinary DLL
       run: |
         $phpVersion = "${{ matrix.php }}"
         $ts = "${{ matrix.ts }}"
